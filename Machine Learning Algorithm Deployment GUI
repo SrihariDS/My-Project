@@ -1,0 +1,1459 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Nov 25 09:27:57 2023
+
+@author: Srihari Krishna
+"""
+
+import tkinter as tk
+from tkinter import *
+from tkinter import ttk
+from tkinter import filedialog
+from tkinter import Label, Entry, Button
+import pandas as pd
+import numpy as np
+from tkinter import Label, Button, Entry, filedialog
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import PolynomialFeatures
+# Import Logistic Regression
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, confusion_matrix
+from tkinter import messagebox
+from sklearn.naive_bayes import GaussianNB #Continuous
+from sklearn.neighbors import KNeighborsClassifier
+
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+
+from sklearn.cluster import KMeans
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.decomposition import PCA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+
+class Deployment:
+    def __init__(self):
+        self.window1 = tk.Tk()
+        self.window1.title(" DEPLOYMENTRY")
+        self.window1.geometry("700x600")
+        self.window1.resizable(False, False)
+        self.window1.config(bg="#c2d1ff")
+        
+        tk.Frame(self.window1, bg="#b3e0ff", width=700, height=100).place(x=0, y=0)
+        Label(self.window1, text="DEPLOYMENT", font="arial 20 bold", bg="white", fg="#002e4d").place(x=250, y=25)
+
+        Label(self.window1, text="SELECT THE FILE", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=250, y=120)
+
+        b1 = Button(self.window1, text="OPEN-CSV-FILE", width=15, bg="#e6ffff", font="arial 14 bold", command=self.open_csv_file)
+        b1.place(x=70, y=400)
+
+        b2 = Button(self.window1, text="GET X", width=10, bg="#e6ffff", font="arial 14 bold", command=self.getx)
+        b2.place(x=300, y=400)
+
+        b3 = Button(self.window1, text="GET Y", width=10, bg="#e6ffff", font="arial 14 bold", command=self.gety)
+        b3.place(x=500, y=400)
+
+        b4 = Button(self.window1, text="NEXT", width=10, bg="#e6ffff", font="arial 14 bold", command=self.Algorithm)
+        b4.place(x=300, y=500)
+        
+        #Entry boxs for SLR
+        self.entry_var = tk.DoubleVar()
+        
+        self.entry_var_mlr = tk.DoubleVar()
+        # Entry box variable for MLR
+        self.entry_var_rd = tk.DoubleVar()
+        self.entry_var_admin = tk.DoubleVar()
+        self.entry_var_marketing = tk.DoubleVar()
+
+        
+        # Entry box variable for Polynomial Regression
+        self.entry_var_Level = tk.DoubleVar()
+        
+        # Make self.x_poly a class-level variable
+        self.x_poly = None
+        
+        
+        
+        # Entry box variable for Logistic Regression
+        
+        self.entry_var_age = tk.DoubleVar()
+        self.entry_var_Esalary = tk.DoubleVar()
+
+        # OneHotEncoder for gender
+        self.gender_encoder = OneHotEncoder(drop='first', sparse_output=False)
+
+        # Logistic Regression classifier
+        self.classifier = LogisticRegression(random_state=42)
+        
+        # Entry box variable for Navie bayes
+        self.entry_var_Sepal_l = tk.DoubleVar()
+        self.entry_var_Sepal_w = tk.DoubleVar()
+        self.entry_var_Petal_l = tk.DoubleVar()
+        self.entry_var_Petal_w = tk.DoubleVar()
+        # Entry box variable for Decision_Tree
+        self.entry_var_open = tk.DoubleVar()
+        self.entry_var_high = tk.DoubleVar()
+        self.entry_var_low = tk.DoubleVar()
+        self.entry_var_close = tk.DoubleVar()
+        
+        self.entry_var_INCOME = tk.DoubleVar()
+        self.entry_var_SPENDING = tk.DoubleVar()
+        
+        self.entry_var_Alcohol = tk.DoubleVar()
+        self.entry_var_Malic_Acid = tk.DoubleVar()
+        self.entry_var_Ash = tk.DoubleVar()
+        self.entry_var_Ash_Alcanity = tk.DoubleVar()
+        
+        
+        
+        
+        self.box1 = tk.Listbox(self.window1, selectmode=tk.MULTIPLE)
+        self.box1.place(x=100, y=200)
+
+        self.box2 = tk.Listbox(self.window1)
+        self.box2.place(x=300, y=200)
+
+        self.box3 = tk.Listbox(self.window1)
+        self.box3.place(x=500, y=200)
+
+        self.csv_columns = []
+        self.feature_col = []
+        self.target_col = []
+        self.file_path = None  # Add a variable to store the file path
+        self.x = None  # Initialize x at the class level
+        self.y = None  # Initialize y at the class level
+        self.sc = None  # Initialize sc at the class level
+        self.regressor = None  # Initialize regressor at the class level
+        self.lda_model = None
+        self.logistic_reg_lda = None 
+
+    def getx(self):
+        x_v = []
+        s = self.box1.curselection()
+        for i in s:
+            if i not in self.feature_col:
+                self.feature_col.append(i)
+                x_v = self.feature_col
+        for i in x_v:
+            self.box2.insert(tk.END, self.csv_columns[i])
+
+    def gety(self):
+        y_v = []
+        s = self.box1.curselection()
+        for j in s:
+            if j not in self.target_col:
+                self.target_col.append(j)
+                y_v = self.target_col
+        for i in y_v:
+            self.box3.insert(tk.END, self.csv_columns[i])
+
+    def open_csv_file(self):
+        self.csv_columns = []
+        self.feature_col = []
+        self.target_col = []
+        self.file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
+
+        if self.file_path:
+            try:
+                file = pd.read_csv(self.file_path)
+                self.csv_columns = list(file.columns)
+                self.box1.delete(0, tk.END)
+                for item in self.csv_columns:
+                    self.box1.insert(tk.END, item)
+            except FileNotFoundError:
+                print("CSV file not found!")
+
+    def Algorithm(self):
+        self.window2 = tk.Tk()
+        self.window2.title("ALGORITHM")
+        self.window2.geometry("700x600")
+        self.window2.resizable(False, False)
+        self.window2.config(bg="#c2d1ff")
+
+        tk.Frame(self.window2, bg="#b3e0ff", width=700, height=100).place(x=0, y=0)
+        Label(self.window2, text="SELECT ALGORITHMS", font="arial 20 bold", bg="white", fg="#002e4d").place(x=200, y=25)
+
+        b1 = Button(self.window2, text="SIMPLE LINEAR", width=20, bg="#e6ffff", font="arial 14 bold", command=self.SLR)
+        b1.place(x=70, y=110)
+        
+        b2 = Button(self.window2, text="MULTI LINEAR", width=20, bg="#e6ffff", font="arial 14 bold", command=self.MLR)
+        b2.place(x=70, y=170)
+        
+        b3 = Button(self.window2, text="POLYNAMIAL", width=20, bg="#e6ffff", font="arial 14 bold", command=self.PR)
+        b3.place(x=70, y=230)
+        
+        b4 = Button(self.window2, text="LOSITIC REGRESSION", width=20, bg="#e6ffff", font="arial 14 bold", command=self.LR)
+        b4.place(x=70, y=290)
+        
+        b5 = Button(self.window2, text="NAIVE BAYES", width=20, bg="#e6ffff", font="arial 14 bold", command=self.NB)
+        b5.place(x=70, y=350)
+        
+        b6 = Button(self.window2, text="KNN", width=20, bg="#e6ffff", font="arial 14 bold", command=self.KNN)
+        b6.place(x=70, y=410)
+        
+        b7 = Button(self.window2, text="SVM", width=20, bg="#e6ffff", font="arial 14 bold", command=self.SVM)
+        b7.place(x=70, y=470)
+        
+        b7 = Button(self.window2, text="DECISION TREE", width=20, bg="#e6ffff", font="arial 14 bold", command=self.Decision_Tree)
+        b7.place(x=70, y=530)
+        
+        b8 = Button(self.window2, text="RANDOM FOREST", width=20, bg="#e6ffff", font="arial 14 bold", command=self.RMF)
+        b8.place(x=400, y=110)
+        
+        b9=Button(self.window2,text="K-MEANS",width=15,bg="#e6ffff",font="arial 14 bold",command=self.KMEAN)
+        b9.place(x=400,y=170)
+        
+        b10=Button(self.window2,text="HIERARCHICAL",width=15,bg="#e6ffff",font="arial 14 bold",command=self.HIERARCHICAL)
+        b10.place(x=400,y=230)
+        
+        b11=Button(self.window2,text="PCA",width=15,bg="#e6ffff",font="arial 14 bold",command=self.PCA)
+        b11.place(x=400,y=290)
+        
+        b12=Button(self.window2,text="LDA",width=15,bg="#e6ffff",font="arial 14 bold",command=self.LDA)
+        b12.place(x=400,y=350)
+        
+        def validate_and_proceed(self):
+            # Check if features and targets are selected
+            if not self.feature_col or not self.target_col:
+                print("Please select features and targets before proceeding.")
+                
+                return
+
+            # Proceed to SLR method
+            self.SLR()
+            # Proceed to MLR method
+            self.MLR()
+            # Proceed to PR method
+            self.PR()
+            # Proceed to LR method
+            self.LR()  
+            # Proceed to NB method
+            self.NB()          
+            # Proceed to KNN method
+            self.KNN()        
+            # Proceed to SVM method
+            self.SVM()     
+            # Proceed to SVM method
+            self.Decision_Tree()           
+            # Proceed to RMF method
+            self.RMF()
+            # Proceed to KMEAN method
+            self.KMEAN()
+            # Proceed to HIERARCHICAL method
+            self.HIERARCHICAL()            
+            # Proceed to PCA method
+            self.PCA()           
+            # Proceed to LDA method
+            self.LDA()
+
+    def SLR(self):
+        self.window3 = tk.Tk()
+        self.window3.title("SLR")
+        self.window3.geometry("700x200")
+        self.window3.resizable(False, False)
+        self.window3.config(bg="#c2d1ff")
+
+        Label(self.window3, text="SIMPLE LINEAR REGRESSOR", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=220, y=10)
+
+        Label(self.window3, text="Experience", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=50)
+        
+        Label(self.window3, text="Salary", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=100)
+
+        b1 = Button(self.window3, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold", command=self.predict)
+        b1.place(x=500, y=50)
+
+        # Entry box for user input
+        Entry(self.window3, textvariable=self.entry_var).place(x=300, y=50)
+        
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+        
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+        self.x = file[selected_features].values
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+
+        # Feature scaling
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+
+        # Create and train the linear regression model
+        self.regressor = LinearRegression()
+        self.regressor.fit(self.x, self.y)
+        
+    def predict(self):
+        try:
+            feature_value = float(self.entry_var.get())
+            prediction = self.regressor.predict([[feature_value]])
+
+            # Display the predicted value
+            result_label = Label(self.window3, font=("arial 15 bold", 15, "bold"),bg="#e6ffff",
+                                 text="Predicted Value: " + str(prediction[0]))
+            result_label.place(x=180, y=100)
+            
+        except ValueError:
+            result_label = Label(self.window3, text="Invalid input. Please enter a valid numerical value.", font="System")
+            result_label.place(x=180, y=100)
+            
+    def MLR(self):
+        self.window4 = tk.Tk()
+        self.window4.title("MLR")
+        self.window4.geometry("900x600")
+        self.window4.resizable(False, False)
+        self.window4.config(bg="#c2d1ff")
+
+        Label(self.window4, text="MULTI LINEAR REGRESSOR", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=220, y=10)
+
+        Label(self.window4, text="RD spend", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=550, y=50)
+        Label(self.window4, text="Administration", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=550, y=100)
+        Label(self.window4, text="Marketing Spend", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=550, y=150)
+        Label(self.window4, text="Profit", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=130, y=200)
+
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+
+        # Convert all column names to strings
+        file.columns = file.columns.astype(str)
+
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+
+        # Filter out non-numeric columns
+        numeric_columns = file.select_dtypes(include=np.number).columns
+        selected_features = [col for col in selected_features if col in numeric_columns]
+
+        # Handle categorical data (one-hot encoding)
+        categorical_columns = file.select_dtypes(exclude=np.number).columns
+        if not categorical_columns.empty:
+            encoder = OneHotEncoder(drop='first', sparse_output=False)  # Update sparse to sparse_output
+            encoded_cols = pd.DataFrame(encoder.fit_transform(file[categorical_columns]))
+            file = pd.concat([file, encoded_cols], axis=1)
+
+        self.x = file[selected_features]
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+
+        # Feature scaling
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+
+        # Create and train the multi-linear regression model
+        self.regressor = LinearRegression()
+        self.regressor.fit(self.x, self.y)
+
+        # Display coefficients
+        coefficients_label = Label(self.window4, text="Coefficients: " + str(self.regressor.coef_), font="arial 12 bold", bg="#e6ffff", fg="black")
+        coefficients_label.place(x=50, y=50)
+
+        # Display intercept
+        intercept_label = Label(self.window4, text="Intercept: " + str(self.regressor.intercept_), font="arial 12 bold", bg="#e6ffff", fg="black")
+        intercept_label.place(x=50, y=100)
+
+        # Predict button
+        predict_button = Button(self.window4, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold", command=self.predict_mlr)
+        predict_button.place(x=750, y=200)
+
+        # Entry boxes for user input
+
+        
+        Entry(self.window4, textvariable=self.entry_var_rd).place(x=750, y=50)
+        Entry(self.window4, textvariable=self.entry_var_admin).place(x=750, y=100)
+        Entry(self.window4, textvariable=self.entry_var_marketing).place(x=750, y=150)
+        
+    def predict_mlr(self):
+        try:
+            # Check if self.window4 exists
+            if not hasattr(self, 'window4') or not self.window4:
+                print("Window 4 does not exist. Make sure to run MLR first.")
+                return
+       
+            feature_values = np.array([
+                float(self.entry_var_rd.get()),
+                float(self.entry_var_admin.get()),
+                float(self.entry_var_marketing.get())
+            ])
+            # Remove the extra nested array from the input
+            prediction = self.regressor.predict([feature_values])
+    
+            # Display the predicted value
+            result_label = Label(self.window4, font=("arial 15 bold", 15, "bold"), bg="#e6ffff",
+                                 text="Predicted Value: " + str(prediction[0]))
+            result_label.place(x=220, y=200)
+    
+        except ValueError:
+            result_label = Label(self.window4, text="Invalid input. Please enter valid numerical values.", font="System")
+            result_label.place(x=220, y=200)
+        
+    def PR(self):
+        self.window5 = tk.Tk()
+        self.window5.title("POLYNOMIAL REGRESSION")
+        self.window5.geometry("700x600")
+        self.window5.resizable(False, False)
+        self.window5.config(bg="#c2d1ff")
+
+        Label(self.window5, text="POLYNOMIAL REGRESSION", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=220, y=10)
+
+        Label(self.window5, text="Position_Salary_Level", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=50)
+        Label(self.window5, text="Salary", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=100)
+
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+        self.x = file[selected_features].values
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+
+        # Feature scaling
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+
+        # Get the degree for Polynomial Regression
+        degree = 2  # You can modify this to the desired degree
+
+        # Apply Polynomial Regression
+        self.poly_features = PolynomialFeatures(degree=degree)
+        self.x_poly = self.poly_features.fit_transform(self.x)
+
+        # Create and train the linear regression model on polynomial features
+        self.regressor = LinearRegression()
+        self.regressor.fit(self.x_poly, self.y)
+
+        # Predict button
+        predict_button = Button(self.window5, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold",
+                                command=self.predict_PR)
+        predict_button.place(x=500, y=50)
+
+        # Entry boxes for user input
+        Entry(self.window5, textvariable=self.entry_var_Level).place(x=300, y=50)
+
+    def predict_PR(self):
+        try:
+            # Check if self.window5 exists
+            if not hasattr(self, 'window5') or not self.window5:
+                print("Window 5 does not exist. Make sure to run PR first.")
+                return
+
+            feature_value = float(self.entry_var_Level.get())
+            feature_value_scaled = self.sc.transform([[feature_value]])
+            feature_value_poly = self.poly_features.transform(feature_value_scaled)
+            prediction = self.regressor.predict(feature_value_poly)
+
+            # Display the predicted value
+            result_label = Label(self.window5, font=("arial 15 bold", 15, "bold"), bg="#e6ffff",
+                                 text="Predicted Value: " + str(prediction[0]))
+            result_label.place(x=180, y=100)
+
+        except ValueError:
+            result_label = Label(self.window5, text="Invalid input. Please enter a valid numerical value.", font="System")
+            result_label.place(x=180, y=100)
+    
+    
+    def LR(self):
+        self.window6 = tk.Tk()
+        self.window6.title("Logistic Regression")
+        self.window6.geometry("700x600")
+        self.window6.resizable(False, False)
+        self.window6.config(bg="#c2d1ff")
+
+        Label(self.window6, text="LOGISTIC REGRESSION", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=290,y=10)
+        Label(self.window6, text="Age", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50, y=100)
+        Label(self.window6, text="EstimatedSalary", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50,y=150)
+        Label(self.window6, text="Purchased", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50,y=200)
+
+       
+        Entry(self.window6, textvariable=self.entry_var_age).place(x=250, y=100)
+        Entry(self.window6, textvariable=self.entry_var_Esalary).place(x=250, y=150)
+
+        # Predict button
+        predict_button = Button(self.window6, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold",
+                                command=self.predict_LR)
+        predict_button.place(x=450, y=150)
+
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+
+        # Convert all column names to strings
+        file.columns = file.columns.astype(str)
+
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+
+        # Filter out non-numeric columns
+        numeric_columns = file.select_dtypes(include=np.number).columns
+        selected_features = [col for col in selected_features if col in numeric_columns]
+
+        
+        self.x = file[selected_features]
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+
+        # Apply Logistic Regression
+        # Feature scaling
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+
+        # Training the logistic regression model on the training set
+        self.classifier = LogisticRegression()
+        self.classifier.fit(self.x, self.y)
+
+        # Plot the regression line for Logistic Regression
+        
+
+    def predict_LR(self):
+        try:
+            # Check if self.window6 exists
+            if not hasattr(self, 'window6') or not self.window6:
+                print("Window 6 does not exist. Make sure to run LR first.")
+                return
+
+            # Feature values
+            feature_values = np.array([
+                float(self.entry_var_age.get()),
+                float(self.entry_var_Esalary.get())
+            ]).reshape(1, -1)
+
+            # Remove the extra nested array from the input
+            prediction = self.classifier.predict(feature_values)
+
+            # Display the predicted value
+            result_label = Label(self.window6, font=("arial 15 bold", 15, "bold"), bg="#e6ffff",
+                                 text="Predicted Value: " + str(prediction[0]))
+            result_label.place(x=250, y=200)
+
+        except ValueError as e:
+            print("Prediction error:", e)
+            result_label = Label(self.window6, text="Invalid input. Please enter valid numerical values.", font="System")
+            result_label.place(x=250, y=200)
+         
+   
+         
+    def NB(self):
+        self.window7 = tk.Tk()
+        self.window7.title("NAIVE BAYES")
+        self.window7.geometry("700x600")
+        self.window7.resizable(False, False)
+        self.window7.config(bg="#c2d1ff")
+
+        Label(self.window7, text="NAIVE BAYES", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=290,y=10)
+        Label(self.window7, text="Sepal lenght", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50, y=50)
+        Label(self.window7, text="Sepal width", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50, y=100)
+        Label(self.window7, text="Petal Length", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50,y=150)
+        Label(self.window7, text="Petal width", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50,y=200)
+        Label(self.window7, text="spectype", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50,y=250)
+
+        Entry(self.window7, textvariable=self.entry_var_Sepal_l).place(x=250, y=50)
+        Entry(self.window7, textvariable=self.entry_var_Sepal_w).place(x=250, y=100)
+        Entry(self.window7, textvariable=self.entry_var_Petal_l).place(x=250, y=150)
+        Entry(self.window7, textvariable=self.entry_var_Petal_w).place(x=250, y=200)
+
+        # Predict button
+        predict_button = Button(self.window7, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold",
+                                command=self.predict_NB)
+        predict_button.place(x=450, y=150)
+        
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+
+        # Convert all column names to strings
+        file.columns = file.columns.astype(str)
+
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+
+        # Filter out non-numeric columns
+        numeric_columns = file.select_dtypes(include=np.number).columns
+        selected_features = [col for col in selected_features if col in numeric_columns]
+
+        
+        self.x = file[selected_features]
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+        
+        # Apply NAIVE BAYES
+        # Feature scaling
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+
+        # Training the NAIVE BAYES model on the training set
+        self.classifier = GaussianNB()
+        self.classifier.fit(self.x, self.y)
+        
+        
+    def predict_NB(self):
+        try:
+            # Check if self.window6 exists
+            if not hasattr(self, 'window7') or not self.window7:
+                print("Window 7 does not exist. Make sure to run RB first.")
+                return
+
+            # Feature values
+            feature_values = np.array([
+                float(self.entry_var_Sepal_l.get()),
+                float(self.entry_var_Sepal_w.get()),
+                float(self.entry_var_Petal_l.get()),
+                float(self.entry_var_Petal_w.get())
+            ]).reshape(1, -1)
+
+            # Remove the extra nested array from the input
+            prediction = self.classifier.predict(feature_values)
+
+            # Display the predicted value
+            result_label = Label(self.window7, font=("arial 15 bold", 15, "bold"), bg="#e6ffff",
+                                 text="Predicted Value: " + str(prediction[0]))
+            result_label.place(x=250, y=250)
+            
+        except ValueError as e:
+            print("Prediction error:", e)
+            result_label = Label(self.window7, text="Invalid input. Please enter valid numerical values.", font="System")
+            result_label.place(x=250, y=250)
+            
+            
+    def KNN(self):
+        self.window8 = tk.Tk()
+        self.window8.title("K NEAREST NEIGHBUOR")
+        self.window8.geometry("700x600")
+        self.window8.resizable(False, False)
+        self.window8.config(bg="#c2d1ff")
+
+        Label(self.window8, text="K NEAREST NEIGHBUOR", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=290,y=10)
+        Label(self.window8, text="User ID", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50, y=50)
+        Label(self.window8, text="Age", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50, y=100)
+        Label(self.window8, text="EstimatedSalary", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50,y=150)
+        Label(self.window8, text="Purchased", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50,y=200)
+
+        Entry(self.window8, textvariable=self.entry_var_id).place(x=250, y=50)
+        Entry(self.window8, textvariable=self.entry_var_age).place(x=250, y=100)
+        Entry(self.window8, textvariable=self.entry_var_Esalary).place(x=250, y=150)
+
+        # Predict button
+        predict_button = Button(self.window8, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold",
+                                command=self.predict_KN)
+        predict_button.place(x=450, y=150)
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+
+        # Convert all column names to strings
+        file.columns = file.columns.astype(str)
+
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+
+        # Filter out non-numeric columns
+        numeric_columns = file.select_dtypes(include=np.number).columns
+        selected_features = [col for col in selected_features if col in numeric_columns]
+
+        
+        self.x = file[selected_features]
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+        
+        # Apply K NEAREST NEIGHBUOR
+        # Feature scaling
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+
+        # Training the K NEAREST NEIGHBUOR model on the training set
+        self.classifier = KNeighborsClassifier(n_neighbors=5)
+        self.classifier.fit(self.x, self.y)
+        
+       
+    def predict_KN(self):
+        try:
+            # Check if self.window6 exists
+            if not hasattr(self, 'window8') or not self.window8:
+                print("Window 8 does not exist. Make sure to run KNN first.")
+                return
+
+            # Feature values
+            feature_values = np.array([
+                float(self.entry_var_id.get()),
+                float(self.entry_var_age.get()),
+                float(self.entry_var_Esalary.get())
+            ]).reshape(1, -1)
+
+            # Remove the extra nested array from the input
+            prediction = self.classifier.predict(feature_values)
+
+            # Display the predicted value
+            result_label = Label(self.window8, font=("arial 15 bold", 15, "bold"), bg="#e6ffff",
+                                 text="Predicted Value: " + str(prediction[0]))
+            result_label.place(x=250, y=200)
+
+        except ValueError as e:
+            print("Prediction error:", e)
+            result_label = Label(self.window8, text="Invalid input. Please enter valid numerical values.", font="System")
+            result_label.place(x=250, y=200)
+    
+            
+    def SVM(self):
+        
+        self.window9 = tk.Tk()
+        self.window9.title("SUPPORT VECTOR MACHINE")
+        self.window9.geometry("700x600")
+        self.window9.resizable(False, False)
+        self.window9.config(bg="#c2d1ff")
+
+        Label(self.window9, text="K NEAREST NEIGHBUOR", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=290,y=10)
+        Label(self.window9, text="User ID", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50, y=50)
+        Label(self.window9, text="Age", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50, y=100)
+        Label(self.window9, text="EstimatedSalary", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50,y=150)
+        Label(self.window9, text="Purchased", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50,y=200)
+
+        Entry(self.window9, textvariable=self.entry_var_id).place(x=250, y=50)
+        Entry(self.window9, textvariable=self.entry_var_age).place(x=250, y=100)
+        Entry(self.window9, textvariable=self.entry_var_Esalary).place(x=250, y=150)
+        
+        # Predict button
+        predict_button = Button(self.window9, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold",
+                                command=self.predict_SVM)
+        predict_button.place(x=450, y=150)
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+
+        # Convert all column names to strings
+        file.columns = file.columns.astype(str)
+
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+
+        # Filter out non-numeric columns
+        numeric_columns = file.select_dtypes(include=np.number).columns
+        selected_features = [col for col in selected_features if col in numeric_columns]
+
+        
+        self.x = file[selected_features]
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+        
+        # Apply SVM
+        # Feature scaling
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+        
+        # Training the K NEAREST NEIGHBUOR model on the training set
+        self.classifier = SVC(kernel="poly",gamma=0.94)
+        self.classifier.fit(self.x, self.y)
+        
+    def predict_SVM(self):
+        try:
+            # Check if self.window6 exists
+            if not hasattr(self, 'window9') or not self.window9:
+                print("Window 9 does not exist. Make sure to run SVM first.")
+                return
+
+            # Feature values
+            feature_values = np.array([
+                float(self.entry_var_id.get()),
+                float(self.entry_var_age.get()),
+                float(self.entry_var_Esalary.get())
+            ]).reshape(1, -1)
+
+            # Remove the extra nested array from the input
+            prediction = self.classifier.predict(feature_values)
+
+            # Display the predicted value
+            result_label = Label(self.window9, font=("arial 15 bold", 15, "bold"), bg="#e6ffff",
+                                 text="Predicted Value: " + str(prediction[0]))
+            result_label.place(x=250, y=200)
+
+        except ValueError as e:
+            print("Prediction error:", e)
+            result_label = Label(self.window9, text="Invalid input. Please enter valid numerical values.", font="System")
+            result_label.place(x=250, y=200)
+            
+    def Decision_Tree(self):
+        self.window10 = tk.Tk()
+        self.window10.title("NAIVE BAYES")
+        self.window10.geometry("700x500")
+        self.window10.resizable(False, False)
+        self.window10.config(bg="#c2d1ff")
+
+        Label(self.window10, text="DECISION TREE", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=290,y=10)
+        Label(self.window10, text="Open", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50, y=50)
+        Label(self.window10, text="High", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50, y=100)
+        Label(self.window10, text="Loe", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=330,y=50)
+        Label(self.window10, text="Close", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=330,y=100)
+        Label(self.window10, text="Volume", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=50,y=140)
+
+        Entry(self.window10, textvariable=self.entry_var_open).place(x=150, y=50)
+        Entry(self.window10, textvariable=self.entry_var_high).place(x=150, y=100)
+        Entry(self.window10, textvariable=self.entry_var_low).place(x=420, y=50)
+        Entry(self.window10, textvariable=self.entry_var_close).place(x=420, y=100)
+
+        # Predict button
+        predict_button = Button(self.window10, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold",
+                                command=self.predict_DT)
+        predict_button.place(x=480, y=130)
+        
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+
+        # Convert all column names to strings
+        file.columns = file.columns.astype(str)
+
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+
+        # Filter out non-numeric columns
+        numeric_columns = file.select_dtypes(include=np.number).columns
+        selected_features = [col for col in selected_features if col in numeric_columns]
+
+        
+        self.x = file[selected_features]
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+        from sklearn.tree import DecisionTreeRegressor
+        # Apply DecisionTree
+        # Feature scaling
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+
+        # Training the NAIVE BAYES model on the training set
+        self.regressor = DecisionTreeRegressor(random_state = 0)
+        self.regressor.fit(self.x, self.y)
+        
+    def predict_DT(self):
+        try:
+            # Check if self.window10 exists
+            if not hasattr(self, 'window10') or not self.window10:
+                print("Window 10 does not exist. Make sure to run DT first.")
+                return
+
+            # Feature values
+            feature_values = np.array([
+                float(self.entry_var_open.get()),
+                float(self.entry_var_high.get()),
+                float(self.entry_var_low.get()),
+                float(self.entry_var_close.get())
+            ]).reshape(1, -1)
+
+            # Remove the extra nested array from the input
+            prediction = self.regressor.predict(feature_values)
+
+            # Display the predicted value
+            result_label = Label(self.window10, font=("arial 15 bold", 15, "bold"), bg="#e6ffff",
+                                 text="Predicted Value: " + str(prediction[0]))
+            result_label.place(x=180, y=140)
+        except ValueError as e:
+            print("Prediction error:", e)
+            result_label = Label(self.window10, text="Invalid input", font="System")
+            result_label.place(x=180, y=140)
+                
+    def RMF(self):
+        self.window11 = tk.Tk()
+        self.window11.title("RANDOM FOREST")
+        self.window11.geometry("700x500")
+        self.window11.resizable(False, False)
+        self.window11.config(bg="#c2d1ff")
+
+        Label(self.window11, text="RANDOM FOREST", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=290,y=10)
+        Label(self.window11, text="Position_Salary_Level", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=50)
+        Label(self.window11, text="Salary", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=100)
+
+
+        Entry(self.window11, textvariable=self.entry_var_Level).place(x=250, y=50)
+
+       
+
+        # Predict button
+        predict_button = Button(self.window11, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold",
+                                command=self.predict_RMF)
+        predict_button.place(x=480, y=100)
+        
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+
+        # Convert all column names to strings
+        file.columns = file.columns.astype(str)
+
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+
+        # Filter out non-numeric columns
+        numeric_columns = file.select_dtypes(include=np.number).columns
+        selected_features = [col for col in selected_features if col in numeric_columns]
+
+        
+        self.x = file[selected_features]
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+        # Apply RANDOM FOREST
+        # Feature scaling
+        from sklearn.ensemble import RandomForestRegressor
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+
+        # Training the RANDOM FOREST model on the training set
+        self.regressor = RandomForestRegressor()
+        self.regressor.fit(self.x, self.y)
+        
+        self.plot_RMF()
+        
+    def predict_RMF(self):
+        try:
+            # Check if self.window11 exists
+            if not hasattr(self, 'window11') or not self.window11:
+                print("Window 11 does not exist. Make sure to run RMF first.")
+                return
+            feature_value = float(self.entry_var_Level.get())
+            prediction = self.regressor.predict([[feature_value]])
+
+            # Display the predicted value
+            result_label = Label(self.window11, font=("arial 15 bold", 15, "bold"), bg="#e6ffff",
+                                 text="Predicted Value: " + str(prediction[0]))
+            result_label.place(x=180, y=100)
+
+        except ValueError:
+            result_label = Label(self.window11, text="Invalid input. Please enter a valid numerical value.", font="System")
+            result_label.place(x=180, y=100)
+     
+    def KMEAN(self):
+        self.window12 = tk.Tk()
+        self.window12.title("K-MEANS CLUSTERING")
+        self.window12.geometry("700x500")
+        self.window12.resizable(False, False)
+        self.window12.config(bg="#c2d1ff")
+
+        Label(self.window12, text="K-MEANS CLUSTERING", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=290, y=10)
+        Label(self.window12, text="AnnualIncome", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=50)
+        Label(self.window12, text="SpendingScore", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=100)
+
+        Entry(self.window12, textvariable=self.entry_var_Level).place(x=250, y=50)
+        Entry(self.window12, textvariable=self.entry_var_SPENDING).place(x=250, y=100)
+
+        # Predict button
+        predict_button = Button(self.window12, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold",
+                                command=self.predict_KMEAN)
+        predict_button.place(x=480, y=100)
+
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+
+        # Convert all column names to strings
+        file.columns = file.columns.astype(str)
+
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+
+        # Filter out non-numeric columns
+        numeric_columns = file.select_dtypes(include=np.number).columns
+        selected_features = [col for col in selected_features if col in numeric_columns]
+
+        self.x = file[selected_features]
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+
+        # Check if the selected features are numeric
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+        file = pd.read_csv(self.file_path)
+        numeric_columns = file[selected_features].select_dtypes(include=np.number).columns
+        if len(numeric_columns) < len(selected_features):
+            print("K-Means clustering requires numeric features.")
+            return
+
+        # Filter out non-numeric columns
+        self.x = file[selected_features]
+        
+        # Feature scaling
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+
+        # Run K-Means clustering
+        num_clusters = 3  # Set the desired number of clusters
+        kmeans = KMeans(n_clusters=num_clusters, n_init=10, random_state=42)
+        file['Cluster'] = kmeans.fit_predict(self.x)
+
+        # Store the K-Means clustering model as a class attribute
+        self.kmeans = kmeans
+    
+    def predict_KMEAN(self):
+        try:
+            # Check if self.window12 exists
+            if not hasattr(self, 'window12') or not self.window12:
+                print("Window 12 does not exist. Make sure to run KMEAN first.")
+                return
+
+            # Feature values
+            feature_values = np.array([
+                float(self.entry_var_INCOME.get()),  
+                float(self.entry_var_SPENDING.get())
+            ]).reshape(1, -1)
+
+            # Remove the extra nested array from the input
+            prediction = self.kmeans.predict(feature_values)
+
+            # Display the predicted value
+            result_label = Label(self.window12, font=("arial 15 bold", 15, "bold"), bg="#e6ffff",
+                                 text="Predicted Cluster: " + str(prediction[0]))
+            result_label.place(x=250, y=200)
+
+        except ValueError as e:
+            print("Prediction error:", e)
+            result_label = Label(self.window12, text="Invalid input. Please enter valid numerical values.", font="System")
+            result_label.place(x=250, y=200)
+            
+    def HIERARCHICAL(self):
+        self.window13 = tk.Tk()
+        self.window13.title("HIERARCHICAL")
+        self.window13.geometry("700x500")
+        self.window13.resizable(False, False)
+        self.window13.config(bg="#c2d1ff")
+
+        Label(self.window13, text="HIERARCHICAL CLUSTERING", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=250, y=10)
+        Label(self.window13, text="AnnualIncome", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=50)
+        Label(self.window13, text="SpendingScore", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=100)
+
+        Entry(self.window13, textvariable=self.entry_var_Level).place(x=250, y=50)
+        Entry(self.window13, textvariable=self.entry_var_SPENDING).place(x=250, y=100)
+
+        # Predict button
+        predict_button = Button(self.window13, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold",
+                                command=self.predict_HIERARCHICAL)
+        predict_button.place(x=480, y=100)
+
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+
+        # Convert all column names to strings
+        file.columns = file.columns.astype(str)
+
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+
+        # Filter out non-numeric columns
+        numeric_columns = file.select_dtypes(include=np.number).columns
+        selected_features = [col for col in selected_features if col in numeric_columns]
+
+        self.x = file[selected_features]
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+
+        # Check if the selected features are numeric
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+        file = pd.read_csv(self.file_path)
+        numeric_columns = file[selected_features].select_dtypes(include=np.number).columns
+        if len(numeric_columns) < len(selected_features):
+            print("Hierarchical clustering requires numeric features.")
+            return
+
+        # Filter out non-numeric columns
+        self.x = file[selected_features]
+
+        # Feature scaling
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+
+        # Run Hierarchical Clustering
+        num_clusters = 3  # Set the desired number of clusters
+        hierarchical = AgglomerativeClustering(n_clusters=num_clusters)
+        file['Cluster'] = hierarchical.fit_predict(self.x)
+
+        # Store the Hierarchical Clustering model as a class attribute
+        self.hierarchical = hierarchical
+
+    def predict_HIERARCHICAL(self):
+        try:
+            # Check if self.window13 exists
+            if not hasattr(self, 'window13') or not self.window13:
+                print("Window 13 does not exist. Make sure to run HIERARCHICAL first.")
+                return
+
+            # Feature values
+            feature_values = np.array([
+                float(self.entry_var_Level.get()),
+                float(self.entry_var_SPENDING.get())
+            ]).reshape(1, -1)
+
+            # Create a synthetic dataset with multiple samples
+            synthetic_data = np.array([
+                [1.0, 2.0],  # Add more samples as needed
+                [2.0, 3.0],
+                [3.0, 4.0]
+            ])
+
+            # Remove the extra nested array from the input
+            prediction = self.hierarchical.fit_predict(synthetic_data)
+
+            # Display the predicted value
+            result_label = Label(self.window13, font=("arial 15 bold", 15, "bold"), bg="#e6ffff",
+                                 text="Predicted Cluster: " + str(prediction[0]))
+            result_label.place(x=250, y=200)
+
+        except ValueError as e:
+            print("Prediction error:", e)
+            result_label = Label(self.window13, text="Invalid input. Please enter valid numerical values.", font="System")
+            result_label.place(x=250, y=200)
+            
+    def PCA(self):
+        self.window14 = tk.Tk()
+        self.window14.title("PCA")
+        self.window14.geometry("700x500")
+        self.window14.resizable(False, False)
+        self.window14.config(bg="#c2d1ff")
+
+        Label(self.window14, text="PCA", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=250, y=10)
+        Label(self.window14, text="Alcohol", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=50)
+        Label(self.window14, text="Malic_Acid", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=100)
+        Label(self.window14, text="Ash", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=150)
+        Label(self.window14, text="Ash_Alcanity", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=200)
+        Label(self.window14, text="Customer_Segment", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=250)
+        
+        Entry(self.window14, textvariable=self.entry_var_Alcohol).place(x=250, y=50)
+        Entry(self.window14, textvariable=self.entry_var_Malic_Acid).place(x=250, y=100)
+        Entry(self.window14, textvariable=self.entry_var_Ash).place(x=250, y=150)
+        Entry(self.window14, textvariable=self.entry_var_Ash_Alcanity).place(x=250, y=200)
+
+        # Predict button
+        predict_button = Button(self.window14, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold",
+                                command=self.predict_pca)
+        predict_button.place(x=480, y=100)
+
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+
+        # Convert all column names to strings
+        file.columns = file.columns.astype(str)
+
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+
+        # Filter out non-numeric columns
+        numeric_columns = file.select_dtypes(include=np.number).columns
+        selected_features = [col for col in selected_features if col in numeric_columns]
+
+        self.x = file[selected_features]
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+
+        # Check if the selected features are numeric
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+        file = pd.read_csv(self.file_path)
+        numeric_columns = file[selected_features].select_dtypes(include=np.number).columns
+        if len(numeric_columns) < len(selected_features):
+            print("PCA requires numeric features.")
+            return
+
+        # Filter out non-numeric columns
+        self.x = file[selected_features]
+
+        # Feature scaling
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+
+        # Apply PCA
+        pca = PCA(n_components=2)  # Set the desired number of components
+        self.x_pca = pca.fit_transform(self.x)
+
+        # Store the PCA model as a class attribute
+        self.pca_model = pca
+        
+        # Train Logistic Regression on PCA components
+        logistic_reg_pca = LogisticRegression()
+        logistic_reg_pca.fit(self.x_pca, self.y)
+
+        # Store the Logistic Regression model as a class attribute
+        self.logistic_reg_pca = logistic_reg_pca
+
+    def predict_pca(self):
+        try:
+            # Check if self.window14 exists
+            if not hasattr(self, 'window14') or not self.window14:
+                print("Window 14 does not exist. Make sure to run PCA first.")
+                return
+
+            # Feature values
+            feature_values = np.array([
+                float(self.entry_var_Alcohol.get()),
+                float(self.entry_var_Malic_Acid.get()),
+                float(self.entry_var_Ash.get()),
+                float(self.entry_var_Ash_Alcanity.get())
+            ]).reshape(1, -1)
+
+            # Transform features using the PCA model
+            feature_values_pca = self.pca_model.transform(feature_values)
+
+            # Run Logistic Regression on PCA components
+            prediction = self.logistic_reg_pca.predict(feature_values_pca)
+
+            # Display the predicted value
+            result_label = Label(self.window14, font=("arial 15 bold", 15, "bold"), bg="#e6ffff",
+                                 text="Predicted Cluster: " + str(prediction[0]))
+            result_label.place(x=300, y=250)
+
+        except ValueError as e:
+            print("Prediction error:", e)
+            result_label = Label(self.window14, text="Invalid input. Please enter valid numerical values.", font="System")
+            result_label.place(x=300, y=250)
+            
+    def LDA(self):
+        self.window15 = tk.Tk()
+        self.window15.title("LDA")
+        self.window15.geometry("700x500")
+        self.window15.resizable(False, False)
+        self.window15.config(bg="#c2d1ff")
+
+        Label(self.window15, text="LDA", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=250, y=10)
+        Label(self.window15, text="Alcohol", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=50)
+        Label(self.window15, text="Malic_Acid", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=100)
+        Label(self.window15, text="Ash", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=150)
+        Label(self.window15, text="Ash_Alcanity", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=200)
+        Label(self.window15
+              , text="Customer_Segment", font="arial 15 bold", bg="#e6ffff", fg="black").place(x=70, y=250)
+
+
+        Entry(self.window15, textvariable=self.entry_var_Alcohol).place(x=250, y=50)
+        Entry(self.window15, textvariable=self.entry_var_Malic_Acid).place(x=250, y=100)
+        Entry(self.window15, textvariable=self.entry_var_Ash).place(x=250, y=150)
+        Entry(self.window15, textvariable=self.entry_var_Ash_Alcanity).place(x=250, y=200)
+
+        # Predict button
+        predict_button = Button(self.window15, text="Predict", width=10, bg="#e6ffff", font="arial 14 bold",
+                                command=self.predict_lda)
+        predict_button.place(x=480, y=100)
+
+        # Read the CSV file again
+        if not self.file_path:
+            print("Please select a CSV file first.")
+            return
+
+        # Read the CSV file again
+        file = pd.read_csv(self.file_path)
+
+        # Convert all column names to strings
+        file.columns = file.columns.astype(str)
+
+        # Select the desired columns based on the feature indices
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+
+        # Filter out non-numeric columns
+        numeric_columns = file.select_dtypes(include=np.number).columns
+        selected_features = [col for col in selected_features if col in numeric_columns]
+
+        self.x = file[selected_features]
+
+        try:
+            # Assuming only one target column is selected
+            target_column = self.csv_columns[self.target_col[0]]
+            self.y = file[target_column].values
+        except IndexError:
+            print("No target column selected.")
+            return
+
+        # Check if the selected features are numeric
+        selected_features = [self.csv_columns[i] for i in self.feature_col]
+        file = pd.read_csv(self.file_path)
+        numeric_columns = file[selected_features].select_dtypes(include=np.number).columns
+        if len(numeric_columns) < len(selected_features):
+            print("LDA requires numeric features.")
+            return
+
+        # Filter out non-numeric columns
+        self.x = file[selected_features]
+
+        # Feature scaling
+        self.sc = StandardScaler()
+        self.x = self.sc.fit_transform(self.x)
+
+        # Apply LDA
+        lda = LDA(n_components=1)  # Set the desired number of components
+        self.x_lda = lda.fit_transform(self.x, self.y)
+
+        # Store the LDA model as a class attribute
+        self.lda_model = lda
+
+        # Train Logistic Regression on LDA components
+        logistic_reg_lda = LogisticRegression()
+        logistic_reg_lda.fit(self.x_lda, self.y)
+
+        # Store the Logistic Regression model as a class attribute
+        self.logistic_reg_lda = logistic_reg_lda
+
+    def predict_lda(self):
+        try:
+            # Check if self.window15 exists
+            if not hasattr(self, 'window15') or not self.window15:
+                print("Window 15 does not exist. Make sure to run LDA first.")
+                return
+
+            # Feature values
+            feature_values = np.array([
+                float(self.entry_var_Alcohol.get()),
+                float(self.entry_var_Malic_Acid.get()),
+                float(self.entry_var_Ash.get()),
+                float(self.entry_var_Ash_Alcanity.get())
+            ]).reshape(1, -1)
+
+            # Transform features using the LDA model
+            feature_values_lda = self.lda_model.transform(feature_values)
+
+            # Run Logistic Regression on LDA components
+            prediction = self.logistic_reg_lda.predict(feature_values_lda)
+
+            # Display the predicted value
+            result_label = Label(self.window15, font=("arial 15 bold", 15, "bold"), bg="#e6ffff",
+                                 text="Predicted Class: " + str(prediction[0]))
+            result_label.place(x=300, y=250)
+
+        except ValueError as e:
+            print("Prediction error:", e)
+            result_label = Label(self.window15, text="Invalid input. Please enter valid numerical values.", font="System")
+            result_label.place(x=300, y=250)
+
+    def run(self):
+        self.window1.mainloop()
+
+# Usage example:
+deployment_app = Deployment()
+deployment_app.run()
+
+
+        
+    
+  
+  
+
+
+
+
+
+    
